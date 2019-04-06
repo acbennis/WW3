@@ -5,11 +5,13 @@
 !/                  +-----------------------------------+
 !/                  | WAVEWATCH III           NOAA/NCEP |
 !/                  |     A. J. van der Westhuysen      |
+!/                  |        A. Roland                  |
 !/                  |                        FORTRAN 90 |
-!/                  | Last update :         13-Jan-2013 |
+!/                  | Last update :         04-Apr-2019 |
 !/                  +-----------------------------------+
 !/
 !/    13 Jan-2013 : Origination, based on SWAN v40.91 code ( version 4.08 )
+!/    04 
 !/
 !/    Copyright 2009 National Weather Service (NWS),
 !/       National Oceanic and Atmospheric Administration.  All rights
@@ -108,12 +110,16 @@
 !/                  +-----------------------------------+
 !/                  | WAVEWATCH III           NOAA/NCEP |
 !/                  |     A. J. van der Westhuysen      |
+!/                  |        A. Roland                  |
 !/                  |                        FORTRAN 90 |
 !/                  | Last update :         13-Jan-2013 |
 !/                  +-----------------------------------+
 !/
 !/    13 Jan-2013 : Origination, based on SWAN v40.91 code ( version 4.08 )
 !/    05 Oct-2016 : Avoiding divide by zero for EMEAN      ( version 5.15 )
+!/    12 Mar-2019 : Fix bug in source term computation factor 2 in the source term (A. Roland)   ( version 6.xx ) 
+!/    12 Mar-2019 : Add computation of diagonal part for implicit integration (A- Roland) ( version 6.xx ) 
+!/ 
 !/
 !  1. Purpose :
 !
@@ -325,9 +331,9 @@
 !
 ! 1.  Integral over directions
 !
+!AR: Integration of general mean parameters must be unique for all physics
       SIGM01 = 0.
       EMEAN  = 0.
-!      FMEAN  = 0.
 
       DO IK=1, NK
         EB(IK) = 0.
@@ -356,8 +362,8 @@
       SIGM01 = MAX ( 1.E-7 , SIGM01 ) / MAX(EMEAN,0.001)
 
 !---- Temporary parameters (to be replaced by namelists) -----
-      PTRIAD(1) = 0.05
-      PTRIAD(2) = 2.5
+      PTRIAD(1) = 1. 
+      PTRIAD(2) = 20. 
       PTRIAD(3) = 10.
       PTRIAD(4) = 0.2
       PTRIAD(5) = 0.01
@@ -387,11 +393,12 @@
       WISM   = (XIS**ISM -0.5) / (XIS**ISM - XIS**ISM1)
       WISM1  = 1. - WISM
 
+!AR: For each node at each time ... ?!?!?
+!AR: Those arrays must not be allocated here at all see SNL4
       ALLOCATE (E (1:NK))
       ALLOCATE (SA(1:NTH,1:NK+ISP1))
       E  = 0.
       SA = 0.
-
 !
 !     --- compute maximum frequency for which interactions are calculated
 !
@@ -405,12 +412,18 @@
 !
 !     --- compute 3-wave interactions
 !
-      IF ( URSELL.GE.PTRIAD(5) ) THEN
+!     AR: No need for switching, shallow water physics should 
+!         only be called when lowest freq. is touching botton
+!         will see this later ...
+!
+      IF ( .true. ) THEN!URSELL.GE.PTRIAD(5) ) THEN
 !
 !       --- calculate biphase
 !
         BIPH   = (0.5*PI)*(TANH(PTRIAD(4)/URSELL)-1.)
         SINBPH = ABS( SIN(BIPH) )
+!
+!     AR: again ... move to init
 !
         ALLOCATE (EF (1:NK))
         EF = 0.
@@ -445,14 +458,18 @@
                  CM  = 0.
               END IF
 
-              AUX1 = WNM**2 * ( GRAV * DEP + 2.*CM**2 )
-              AUX2 = WN0 * DEP * ( GRAV * DEP + &
+              AUX1 = WNM**2 * ( GRAV * DEP + 2.*CM**2 ) ! 1/m² * m²/s² = 1/s² 
+              AUX2 = WN0 * DEP * ( GRAV * DEP + &       ! 1/m * m * m/s² * m = m²/s²
                                    (2./15.) * GRAV * DEP_3 * WN0**2 - &
                                    (2./ 5.) * W0**2 * DEP_2 )
-              RINT = AUX1 / AUX2
-              FT = PTRIAD(1) * C0 * CG(IK) * RINT**2 * SINBPH
+              RINT = AUX1 / AUX2                        ! 1/s² * s²/m² = 1/m²
+              FT   = PTRIAD(1) * C0 * CG(IK) * RINT**2 * SINBPH ! m²/s² * 1/m4 = 1/(m²*s²)
 
-              SA(ITH,IK) = MAX(0., FT * ( EM * EM - 2. * EM * E0 ))
+              SA(ITH,IK) = MAX(0.,FT * ( EM * EM - 2. * EM * E0 )) ! 1/(m²*s²) * m4 = m²/s² !!! [m²/s]
+
+!              IF ( IK.GT.-ISM1 .and. A(ITH+(IK-1)*NTH) .gt. 0.) &
+!          &                     write(*,'(4I10,10F15.8)') IK, ITH, IK+ISM, IK+ISM1, FT, &
+!          &                     SA(ITH,IK), E(IK), EF(IK), A(ITH+(IK-1)*NTH), 4*SQRT(EMEAN)
 
            END DO
         END DO
@@ -461,25 +478,24 @@
 !        ---  put source and diagonal terms together
 !             (using Jacobian for S(f) -> S(k))
 !
+!AR: next step is to write some init routine for triads
         ALLOCATE (SF (1:NK))
         SF = 0.
         DO IK = 1, NK
-           SIGPICG = SIG(IK) * 2. * PI / CG(IK)
-           DO ITH = 1, NTH
-!             --- Source term
-              S(ITH+(IK-1)*NTH) = 2.*( SA(ITH,IK) - &
-                                    2.*(WISP  * SA(ITH,IK+ISP1) + &
-                                        WISP1 * SA(ITH,IK+ISP )) ) / &
-                                    SIGPICG
-              SF(IK) = 2.*( SA(ITH,IK) - &
-                         2.*(WISP  * SA(ITH,IK+ISP1) + &
-                         WISP1 * SA(ITH,IK+ISP )) ) + SF(IK)
-!             --- Diagonal term
-              D = 0.
-           END DO
+          SIGPICG = SIG(IK) * PI2 / CG(IK) ! 1/s * s/m = 1/m
+          DO ITH = 1, NTH
+            STRI = SA(ITH,IK) - 2 * (WISP * SA(ITH,IK+ISP1) + WISP1 * SA(ITH,IK+ISP)) 
+            IF (A(ITH+(IK-1)*NTH) .gt. tiny(1.)) THEN
+              D(ITH+(IK-1)*NTH) = STRI / (A(ITH+(IK-1)*NTH)*SIGPICG)
+              S(ITH+(IK-1)*NTH) = STRI / SIGPICG 
+              !write(*,*) SIG(IK), S(ITH+(IK-1)*NTH), D(ITH+(IK-1)*NTH), A(ITH+(IK-1)*NTH)
+            ELSE
+              D(ITH+(IK-1)*NTH) = 0.
+              S(ITH+(IK-1)*NTH) = 0.
+            ENDIF
+          END DO
         END DO
         DEALLOCATE(SF)
-
       ELSE
         D = 0.
         S = 0.
