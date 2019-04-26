@@ -246,6 +246,7 @@
       REAL                    :: DX_MIN_GRIDJ,DY_MIN_GRIDJ,DX_MAX_GRIDJ, &
                                  DY_MAX_GRIDJ
       INTEGER  :: ITRI, IM1, IM2, IT, JT, ISFIRST, ITOUT, NBRELEVANT
+      LOGICAL  :: FindContainingGrid
       REAL :: DIST_MIN, DIST_MAX, EDIST
       LOGICAL RESOL_CHECK
 !
@@ -357,6 +358,7 @@
 
 !notes : MAPSTA refers to GRIDS(I)%MAPSTA ...this is set in W3SETG
             IF ( ABS(MAPSTA(IY,IX)) .EQ. 2 ) THEN
+                FindContainingGrid=.FALSE.
                 XA     = XGRD(IY,IX) !old code: X0 + REAL(IX-1)*SX
                 YA     = YGRD(IY,IX) !old code: Y0 + REAL(IY-1)*SY
 !
@@ -385,9 +387,8 @@
         IF (GRIDS(J)%GTYPE .EQ. UNGTYPE) THEN
           CALL IS_IN_UNGRID(J, XA, YA, ITOUT, IVER, JVER, RW)
           IF (ITOUT.EQ.0) THEN
-            INGRID=.FALSE.
+            FLAGOK=.FALSE.
           ELSE
-            INGRID=.TRUE.
             FLAGOK =( ABS(GRIDS(J)%MAPSTA(JVER(1),IVER(1))).GE.1 .OR.  &
                       RW(1).LT.0.05 ) .AND.      &
                     ( ABS(GRIDS(J)%MAPSTA(JVER(2),IVER(2))).GE.1 .OR.  &
@@ -398,12 +399,6 @@
           NbRelevant=3
         ELSE
           INGRID = W3GRMP( GRIDS(J)%GSU,  XA,  YA, IVER , JVER, RW )
-!          Print *, 'J=', J, 'IX=', IX, 'IY=', IY
-!          Print *, 'IN=', INGRID, 'XA=', XA, 'YA=', YA
-!          Print *, '    1: IVER=', IVER(1), 'JVER=', JVER(1), 'RW=', RW(1)
-!          Print *, '    2: IVER=', IVER(2), 'JVER=', JVER(2), 'RW=', RW(2)
-!          Print *, '    3: IVER=', IVER(3), 'JVER=', JVER(3), 'RW=', RW(3)
-!          Print *, '    4: IVER=', IVER(4), 'JVER=', JVER(4), 'RW=', RW(4)
           IF (INGRID) THEN
             FLAGOK =( ABS(GRIDS(J)%MAPSTA(JVER(1),IVER(1))).GE.1 .OR.  &
                       RW(1).LT.0.05 ) .AND.      &
@@ -413,6 +408,8 @@
                       RW(4)   .LT.0.05 ) .AND.      &
                     ( ABS(GRIDS(J)%MAPSTA(JVER(3),IVER(3))).GE.1 .OR.  &
                       RW(3)   .LT.0.05 )
+          ELSE
+	    FLAGOK=.FALSE.
           END IF
           NbRelevant=4
         END IF
@@ -461,18 +458,6 @@
 ! IVER(1)=IVER(4), IVER(2)=IVER(3)
 ! JVER(1)=JVER(2), JVER(3)=JVER(4)
 
-! point 1:
-                  FLAGOK = ( ABS(GRIDS(J)%MAPSTA(JVER(1),IVER(1))).GE.1 .OR.  &
-                                 RW(1).LT.0.05 ) .AND.      &
-! point 2:
-                           ( ABS(GRIDS(J)%MAPSTA(JVER(2),IVER(2))).GE.1 .OR.  &
-                                    RW(2).LT.0.05 ) .AND.      &
-! point 4:
-                           ( ABS(GRIDS(J)%MAPSTA(JVER(4),IVER(4))).GE.1 .OR.  &
-                                 RW(4)   .LT.0.05 ) .AND.      &
-! point 3:
-                           ( ABS(GRIDS(J)%MAPSTA(JVER(3),IVER(3))).GE.1 .OR.  &
-                                    RW(3)   .LT.0.05 ) 
 !
                   IF ( .NOT.FLAGOK ) CYCLE
 !
@@ -522,8 +507,14 @@
                   RDBPI(IBI,:) = RDBPI(IBI,:) / SUM(RDBPI(IBI,:))
 !
 ! Search was successful, so no need to search through other grids, so exit loop
+                  FindContainingGrid=.TRUE.
                   EXIT
                 END DO ! "DO J=..."
+                IF (FindContainingGrid.eqv..FALSE.) THEN
+                  Print *, 'Error for a node of grid I=', I
+                  Print *, 'Node IX=', IX, ' IY=', IY
+                  Print *, ' is not contained in any grid'
+                END IF
 !
                 IF ( JS.EQ.0 .AND. IMPROC.EQ.NMPERR )                 &
                                  WRITE (MDSE,1020) I, IX, IY, XA, YA
