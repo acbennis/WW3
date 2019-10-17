@@ -816,9 +816,6 @@
 !/TR1          CALL W3STR1 ( SPEC, CG1, WN1, DEPTH, IX,        VSTR, VDTR )
 !/TRX          CALL W3STRX
 !/PDLIB      ENDIF
-!/PDLIB    ELSE
-!/PDLIB      VSTR = 0.
-!/PDLIB      VDTR = 0.
 !/PDLIB    ENDIF
 !
 ! 2.c Dissipation... except for ST4
@@ -845,16 +842,13 @@
 !/DB1                                                   LBREAK, VSDB, VDDB )
 !/DBX          CALL W3SDBX
 !/PDLIB      ENDIF
-!/PDLIB    ELSE
-!/PDLIB      VSDB = 0.
-!/PDLIB      VDDB = 0.
 !/PDLIB    ENDIF
 !
 ! 2.c2   optional dissipation parameterisations
 !
-!/ST6        IF (SWL6S6) THEN
-!/ST6           CALL W3SWL6 ( SPEC, CG1, WN1, VSWL, VDWL )
-!/ST6        END IF
+!/ST6      IF (SWL6S6) THEN
+!/ST6         CALL W3SWL6 ( SPEC, CG1, WN1, VSWL, VDWL )
+!/ST6      END IF
 !
 !  Vegetation 
 !/PDLIB    IF (.NOT. FSSOURCE) THEN
@@ -862,9 +856,6 @@
 !/VEG1         CALL W3SVEG1 ( IX, IY, SPEC, DEPTH, EMEAN, FMEAN, WNMEAN, VSVG, VDVG ) 
 !/VEGX         CALL W3SVEGX
 !/PDLIB      ENDIF
-!/PDLIB    ELSE
-!/PDLIB      VSVG = 0.
-!/PDLIB      VDVG = 0.
 !/PDLIB    ENDIF
 !
 ! 2.d Bottom interactions.
@@ -1134,8 +1125,16 @@
           END IF
 !/DB1     DO IS=IS1, NSPECH
 !/DB1       eInc1 = VSDB(IS) * DT / MAX ( 1. , (1.-HDT*VDDB(IS)))
-!/DB1       SPEC(IS) = MAX ( 0. , SPEC(IS)+eInc1 )
+!/DB1       SPEC(IS) = MAX ( 0. , SPEC(IS) + eInc1 )
 !/DB1     END DO
+!/TR1     DO IS=IS1, NSPECH
+!/TR1       eInc1 = VSTR(IS) * DT / MAX ( 1. , (1.-HDT*VDTR(IS)))
+!/TR1       SPEC(IS) = MAX ( 0. , SPEC(IS) + eInc1 )
+!/TR1     END DO
+!/VEG1     DO IS=IS1, NSPECH
+!/VEG1       eInc1 = VSVG(IS) * DT / MAX ( 1. , (1.-HDT*VDVG(IS)))
+!/VEG1       SPEC(IS) = MAX ( 0. , SPEC(IS) + eInc1 )
+!/VEG1     END DO
 !          IF (IX == DEBUG_NODE) THEN
 !            WRITE(*,'(A20,I20,F20.10,L20,4F20.10)') 'AFTER', IX, DEPTH, SHAVE, SUM(VS), SUM(VD), SUM(SPEC)
 !          ENDIF
