@@ -4815,7 +4815,6 @@
 !/TR1            eVD = evD + MIN(0.,DBLE(VDTR(ISP)))
 !/VEG1           eVS = eVS + DBLE(VSVG(ISP)) / CG(IK,ISEA) * CLATS(ISEA)
 !/VEG1           eVD = evD + MIN(0.,DBLE(VDVG(ISP)))
-              !WRITE(12434,'(I10,3F20.10)') JSEA, VSTOT(ISP,JSEA), VDTOT(ISP,JSEA)
               B_JAC(ISP,IP) = B_JAC(ISP,IP) + SIDT * (eVS - eVD*VA(ISP,JSEA))
               IF (IMEM == 1) THEN
                 ASPAR_JAC(ISP,PDLIB_I_DIAG(IP)) = ASPAR_JAC(ISP,PDLIB_I_DIAG(IP)) - SIDT * eVD
