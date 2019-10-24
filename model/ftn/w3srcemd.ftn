@@ -492,7 +492,6 @@
                                  VSDS(NSPEC), VDDS(NSPEC),            &
 !/ST6                                 VSWL(NSPEC), VDWL(NSPEC),            &
                                  VSBT(NSPEC), VDBT(NSPEC),            &
-                                 VSVG(NSPEC), VDVG(NSPEC),            &
 !/IC1                                 VSIC(NSPEC), VDIC(NSPEC),            &
 !/IC2                                 VSIC(NSPEC), VDIC(NSPEC),            &
 !/IC3                                 VSIC(NSPEC), VDIC(NSPEC),            &
@@ -504,6 +503,7 @@
 !/TRX                                 VSTR(NSPEC), VDTR(NSPEC),            &
 !/BS1                                 VSBS(NSPEC), VDBS(NSPEC),            &
 !/BSX                                 VSBS(NSPEC), VDBS(NSPEC),            &
+!/VEG1                                VSVG(NSPEC), VDVG(NSPEC),            &
 !/REF1                                VREF(NSPEC),                         &
 !/IS1                                 VSIR(NSPEC), VDIR(NSPEC),            &
 !/IS2                                 VSIR(NSPEC), VDIR(NSPEC),VDIR2(NSPEC), &
