@@ -190,10 +190,10 @@
         CALL EXTCDE(2)
       END IF
 
-      VCD = 0.18
-      VNV = 1200
-      VLTH = 0.
-      VDM = 0.025
+!      VCD = 0.18
+!      VNV = 1200
+!      VLTH = 0.
+!      VDM = 0.025
 
       THR = DBLE(1.E-15)
       IF (EMEAN .LT. THR) RETURN
