@@ -564,8 +564,8 @@
 !/ST0      VDDS = 0.
       VSBT = 0.
       VDBT = 0.
-      VSVG = 0.
-      VDVG = 0.
+!/VEG1      VSVG = 0.
+!/VEG1      VDVG = 0.
 !/DB1      VSDB = 0.
 !/DB1      VDDB = 0.
 !/IC1      VSIC = 0.
