@@ -5821,7 +5821,7 @@
             ENDIF ! IMEM
 !/DEBUGSOLVERCOH          OffDiag(:, IP)=REAL(eOff)
 !/DEBUGSOLVERCOH          WRITE(740+IAPROC,*) 'Step 2: sum(eSum)=', sum(eSum), ' eOff=', sum(eOff)
-            IF (FSREFRACTION) THEN
+            IF (FSREFRACTION .and. .not. IMEM == 3) THEN
 !/DEBUGREFRACTION         WRITE(740+IAPROC,*) 'Adding refraction terms to eSum'
               CAD=CAD_THE(:,IP)
               DO ISP=1,NSPEC
@@ -5834,7 +5834,7 @@
               END DO
             END IF
 !/DEBUGSRC            WRITE(740+IAPROC,*) 'Step 3: sum(eSum)=', sum(eSum)
-            IF (FSFREQSHIFT) THEN
+            IF (FSFREQSHIFT .and. .not. IMEM == 3) THEN
               IF (FreqShiftMethod .eq. 1) THEN
                 CAS=CAS_SIG(:,IP)
                 CP_SIG = MAX(ZERO,CAS)
@@ -6013,7 +6013,7 @@
         !
         IF (B_JGS_TERMINATE_DIFFERENCE) THEN
           CALL MPI_ALLREDUCE(is_converged, itmp, 1, MPI_INT, MPI_SUM, MPI_COMM_WCMP, ierr)
-          is_converged=itmp
+          is_converged = itmp
           prop_conv = (DBLE(NX) - DBLE(is_converged))/DBLE(NX) * 100.
           !write(*,*) prop_conv, nbIter, is_converged
           if (myrank == 0) WRITE(*,*) 'solver', nbiter, is_converged, prop_conv, B_JGS_PMIN
