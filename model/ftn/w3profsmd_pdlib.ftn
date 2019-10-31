@@ -4746,6 +4746,7 @@
 
       !WRITE(*,*) NX, NY, NSEA, NSEAL, NSEALM, NP, NPA, NTRI, NE
 
+
       DO JSEA = 1, NP
 
         IP      = JSEA
@@ -4782,13 +4783,15 @@
               DAM2(ITH+IS0) = DAM2(1+IS0)
             END DO
           END DO
-
           eSI    = PDLIB_SI(IP)
           SIDT   = eSI * DTG
           DEPTH  = DW(ISEA) 
-!/DB1     CALL W3SDB1 ( JSEA, SPEC_VA, DEPTH, EMEAN, FMEAN, WNMEAN, CG1, LBREAK, VSDB, VDDB )
-!/TR1     CALL W3STR1 ( SPEC_VA, CG1, WN1, DEPTH, JSEA, VSTR, VDTR )
-!/VEG1    CALL W3SVEG1 ( JSEA, 1, SPEC_VA, DEPTH, EMEAN, FMEAN, WNMEAN, VSVG, VDVG ) 
+!/DB1          VSDB = 0.; VDDB = 0.
+!/DB1          CALL W3SDB1 ( JSEA, SPEC_VA, DEPTH, EMEAN, FMEAN, WNMEAN, CG1, LBREAK, VSDB, VDDB )
+!/TR1          VSTR = 0.; VDTR = 0.
+!/TR1          CALL W3STR1 ( SPEC_VA, CG1, WN1, DEPTH, JSEA, VSTR, VDTR )
+!/VEG1         VSVG = 0.; VDVG = 0. 
+!/VEG1         CALL W3SVEG1 ( JSEA, 1, SPEC_VA, DEPTH, EMEAN, FMEAN, WNMEAN, VSVG, VDVG )
           DO IK=1,NK
             DO ITH=1,NTH
               ISP=ITH + (IK-1)*NTH
@@ -4815,6 +4818,7 @@
 !/TR1            eVD = evD + MIN(0.,DBLE(VDTR(ISP)))
 !/VEG1           eVS = eVS + DBLE(VSVG(ISP)) / CG(IK,ISEA) * CLATS(ISEA)
 !/VEG1           eVD = evD + MIN(0.,DBLE(VDVG(ISP)))
+              !WRITE(12434,'(I10,3F20.10)') JSEA, VSTOT(ISP,JSEA), VDTOT(ISP,JSEA)
               B_JAC(ISP,IP) = B_JAC(ISP,IP) + SIDT * (eVS - eVD*VA(ISP,JSEA))
               IF (IMEM == 1) THEN
                 ASPAR_JAC(ISP,PDLIB_I_DIAG(IP)) = ASPAR_JAC(ISP,PDLIB_I_DIAG(IP)) - SIDT * eVD
@@ -4927,7 +4931,6 @@
 !/DB1         SPEC_VA(ISP) = VA(ISP,JSEA) * CG(IK,ISEA) / CLATS(ISEA)
 !/DB1       ENDDO
 !/DB1     ENDDO
-!/DB1     SPEC_VA = VA(:,JSEA)
 !/DB1     CALL COMPUTE_MEAN_PARAM(SPEC_VA, CG1, WN1, EMEAN, FMEAN, WNMEAN, AMAX)
 !/DB1     CALL W3SDB1 ( JSEA, SPEC_VA, DEPTH, EMEAN, FMEAN, WNMEAN, CG1, LBREAK, VSDB, VDDB )
           DO IK=1,NK
@@ -5821,7 +5824,7 @@
             ENDIF ! IMEM
 !/DEBUGSOLVERCOH          OffDiag(:, IP)=REAL(eOff)
 !/DEBUGSOLVERCOH          WRITE(740+IAPROC,*) 'Step 2: sum(eSum)=', sum(eSum), ' eOff=', sum(eOff)
-            IF (FSREFRACTION .and. .not. IMEM == 3) THEN
+            IF (FSREFRACTION) THEN
 !/DEBUGREFRACTION         WRITE(740+IAPROC,*) 'Adding refraction terms to eSum'
               CAD=CAD_THE(:,IP)
               DO ISP=1,NSPEC
@@ -5834,7 +5837,7 @@
               END DO
             END IF
 !/DEBUGSRC            WRITE(740+IAPROC,*) 'Step 3: sum(eSum)=', sum(eSum)
-            IF (FSFREQSHIFT .and. .not. IMEM == 3) THEN
+            IF (FSFREQSHIFT) THEN
               IF (FreqShiftMethod .eq. 1) THEN
                 CAS=CAS_SIG(:,IP)
                 CP_SIG = MAX(ZERO,CAS)
@@ -6013,7 +6016,7 @@
         !
         IF (B_JGS_TERMINATE_DIFFERENCE) THEN
           CALL MPI_ALLREDUCE(is_converged, itmp, 1, MPI_INT, MPI_SUM, MPI_COMM_WCMP, ierr)
-          is_converged = itmp
+          is_converged=itmp
           prop_conv = (DBLE(NX) - DBLE(is_converged))/DBLE(NX) * 100.
           !write(*,*) prop_conv, nbIter, is_converged
           if (myrank == 0) WRITE(*,*) 'solver', nbiter, is_converged, prop_conv, B_JGS_PMIN
