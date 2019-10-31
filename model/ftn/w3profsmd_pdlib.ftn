@@ -110,6 +110,8 @@
       INTEGER, ALLOCATABLE  :: IS0_pdlib(:)
       INTEGER               :: FreqShiftMethod = 2
       LOGICAL               :: FSGEOADVECT
+      INTEGER               :: POS_TRICK(3,2)
+
 !/DEBUGSRC        INTEGER  :: TESTNODE = 1
 !
 !/ ------------------------------------------------------------------- /
@@ -3601,13 +3603,6 @@
       REAL  :: TRIA03, SIDT, CCOS, CSIN
       REAL  :: SPEC(NSPEC), DEPTH
 
-      POS_TRICK(1,1) = 2
-      POS_TRICK(1,2) = 3
-      POS_TRICK(2,1) = 3
-      POS_TRICK(2,2) = 1
-      POS_TRICK(3,1) = 1
-      POS_TRICK(3,2) = 2
-
 !/DEBUGSOLVER     WRITE(740+IAPROC,*) 'calcARRAY_JACOBI, begin'
 !/DEBUGSOLVER     FLUSH(740+IAPROC)
 
@@ -3795,7 +3790,7 @@
       INTEGER :: I1, I2, I3, NI(3), NI_GLOB(3), NI_ISEA(3)
       INTEGER :: counter
 !/REF1      INTEGER :: eIOBPDR
-      INTEGER :: POS_TRICK(3,2), IP1, IP2, IPP1, IPP2
+      INTEGER :: IP1, IP2, IPP1, IPP2
       REAL  :: DTK, TMP3
       REAL  :: LAMBDA(2)
       REAL  :: FL11, FL12
@@ -3808,20 +3803,13 @@
       REAL  :: eVal1, eVal2, eVal3
       REAL  :: DELTAL(3)
       REAL  :: NM
-      REAL  :: IEN_LOCAL(6)
+      REAL  :: IEN_LOCAL(6), CG2(NK,NTH) 
       REAL  :: TRIA03, SIDT, CCOS, CSIN
       REAL    :: SPEC(NSPEC), DEPTH
 
 !/MEMCHECK      write(740+IAPROC,*) 'memcheck_____:', 'WW3_JACOBI SECTION 0'
 !/MEMCHECK      call getMallocInfo(mallinfos)
 !/MEMCHECK      call printMallInfo(IAPROC,mallInfos)
-
-      POS_TRICK(1,1) = 2
-      POS_TRICK(1,2) = 3
-      POS_TRICK(2,1) = 3
-      POS_TRICK(2,2) = 1
-      POS_TRICK(3,1) = 1
-      POS_TRICK(3,2) = 2
 
       J = 0
       DO IP = 1, npa
@@ -3986,7 +3974,6 @@
       INTEGER :: I1, I2, I3, NI(3), NI_GLOB(3), NI_ISEA(3)
       INTEGER :: counter
 !/REF1      INTEGER :: eIOBPDR
-      INTEGER :: POS_TRICK(3,2)
       REAL*8  :: DTK, TMP3
       REAL*8  :: LAMBDA(2)
       REAL*8  :: FL11, FL12
@@ -4002,13 +3989,6 @@
       REAL*8  :: NM
       REAL*8  :: TRIA03, SIDT, CCOS, CSIN
       REAL*8  :: DEPTH
-
-      POS_TRICK(1,1) = 2
-      POS_TRICK(1,2) = 3
-      POS_TRICK(2,1) = 3
-      POS_TRICK(2,2) = 1
-      POS_TRICK(3,1) = 1
-      POS_TRICK(3,2) = 2
 
       ASPAR_DIAG_LOCAL     = 0.d0
       B_JAC_LOCAL          = 0.d0
@@ -4170,11 +4150,10 @@
       INTEGER :: ITH, IK
       INTEGER :: IE, POS, JSEA
       INTEGER :: I, I1, I2, I3, NI(3), NI_GLOB(3), NI_ISEA(3)
-      INTEGER :: ISP, IP_glob, IPP1, IPP2
+      INTEGER :: ISP, IP_glob, IPP1, IPP2, IOBPTH(NTH)
       INTEGER :: counter
 !/REF1      INTEGER :: eIOBPDR
-      INTEGER :: POS_TRICK(3,2)
-      REAL*8  :: DTK, TMP3
+      REAL*8  :: DTK, TMP3, D1, D2
       REAL*8  :: LAMBDA(2)
       REAL*8  :: CRFS(3), K(3)
       REAL*8  :: KP(3), UV_CUR(3,2)
@@ -4184,24 +4163,24 @@
       REAL*8  :: ien_local(6)
       REAL*8  :: DELTAL(3), K_X(3,NK), K_Y(3,NK), K_U(3)
       REAL*8  :: CRFS_X(3,NK), CRFS_Y(3,NK), CRFS_U(3)
-      REAL*8  :: NM, CGFAK(3,NK)
+      REAL*8  :: NM, CGFAK(3,NK), CSINA(NTH), CCOSA(NTH)
       REAL*8  :: TRIA03, SIDT, CCOS, CSIN
       REAL*8  :: FL11_X, FL12_X, FL21_X, FL22_X, FL31_X, FL32_X
       REAL*8  :: FL11_Y, FL12_Y, FL21_Y, FL22_Y, FL31_Y, FL32_Y
       REAL*8  :: FL11_U, FL12_U, FL21_U, FL22_U, FL31_U, FL32_U
 
-      POS_TRICK(1,1) = 2
-      POS_TRICK(1,2) = 3
-      POS_TRICK(2,1) = 3
-      POS_TRICK(2,2) = 1
-      POS_TRICK(3,1) = 1
-      POS_TRICK(3,2) = 2
- 
       ASPAR_DIAG_LOCAL     = ZERO
       B_JAC_LOCAL          = ZERO
       ASPAR_OFF_DIAG_LOCAL = ZERO
  
       IP_glob = iplg(IP)
+
+      DO ITH = 1, NTH
+        CCOSA(ITH) = FACX * ECOS(ITH)
+        CSINA(ITH) = FACX * ESIN(ITH)
+        IOBPTH(ITH) = IOBDP(IP_glob) * (1-IOBPA(IP_glob)) * IOBPD(ITH,IP_glob)
+      ENDDO
+
 
       DO I = 1, PDLIB_CCON(IP)
 
@@ -4246,7 +4225,6 @@
         ENDIF
 
         DO IK = 1, NK
-
           CSX = CG(IK,NI_ISEA) / CLATS(NI_ISEA)
           CSY = CG(IK,NI_ISEA)
           LAMBDA(1) = ONESIXTH * (CSX(1) + CSX(2) + CSX(3))
@@ -4280,23 +4258,29 @@
         DO ISP = 1, NSPEC
           ITH     = 1 + MOD(ISP-1,NTH)
           IK      = 1 + (ISP-1)/NTH
-          CCOS    = FACX * ECOS(ITH)
-          CSIN    = FACY * ESIN(ITH)
-          K       = K_X(:,IK)    * CCOS + K_Y(:,IK)    * CSIN + K_U
-          CRFS    = CRFS_X(:,IK) * CCOS + CRFS_Y(:,IK) * CSIN + CRFS_U
+!          CCOS    = FACX * ECOS(ITH)
+!          CSIN    = FACY * ESIN(ITH)
+          K(1)     = K_X(1,IK) * CCOSA(ITH) + K_Y(1,IK) * CSINA(ITH) + K_U(1)
+          K(2)     = K_X(2,IK) * CCOSA(ITH) + K_Y(2,IK) * CSINA(ITH) + K_U(2)
+          K(3)     = K_X(3,IK) * CCOSA(ITH) + K_Y(3,IK) * CSINA(ITH) + K_U(3)
+          CRFS(1)  = CRFS_X(1,IK) * CCOSA(ITH) + CRFS_Y(1,IK) * CSINA(ITH) + CRFS_U(1)
+          CRFS(2)  = CRFS_X(2,IK) * CCOSA(ITH) + CRFS_Y(2,IK) * CSINA(ITH) + CRFS_U(2)
+          CRFS(3)  = CRFS_X(3,IK) * CCOSA(ITH) + CRFS_Y(3,IK) * CSINA(ITH) + CRFS_U(3)
           KM      = MIN(ZERO,K)
           KP      = MAX(ZERO,K)
           DELTAL  = CRFS - KP
           NM      = 1.d0/MIN(-THR,SUM(KM))
-          DTK           =  KP(POS) * DTG * IOBDP(IP_glob) * (1-IOBPA(IP_glob)) * IOBPD(ITH,IP_glob)
+          DTK     =  KP(POS) * DTG * IOBPTH(ITH)!IOBDP(IP_glob) * (1-IOBPA(IP_glob)) * IOBPD(ITH,IP_glob)
           TMP3    = DTK * NM   
-          IF (FSGEOADVECT) THEN
+          !IF (FSGEOADVECT) THEN
             ASPAR_DIAG_LOCAL(ISP)     = ASPAR_DIAG_LOCAL(ISP) + TRIA03 + DTK - TMP3*DELTAL(POS)
-            ASPAR_OFF_DIAG_LOCAL(ISP) = ASPAR_OFF_DIAG_LOCAL(ISP)            - TMP3*DELTAL(IPP1)*VA(ISP,IP1)
-            ASPAR_OFF_DIAG_LOCAL(ISP) = ASPAR_OFF_DIAG_LOCAL(ISP)            - TMP3*DELTAL(IPP2)*VA(ISP,IP2)
-          ELSE
-            ASPAR_DIAG_LOCAL(ISP)     = ASPAR_DIAG_LOCAL(ISP) + TRIA03
-          END IF
+            D1                        = DELTAL(IPP1)*VA(ISP,IP1)
+            D2                        = DELTAL(IPP2)*VA(ISP,IP2)
+            ASPAR_OFF_DIAG_LOCAL(ISP) = ASPAR_OFF_DIAG_LOCAL(ISP) - ( TMP3 * ( D1 + D2 )  ) 
+            !ASPAR_OFF_DIAG_LOCAL(ISP) = ASPAR_OFF_DIAG_LOCAL(ISP)            - D2
+          !ELSE
+          !  ASPAR_DIAG_LOCAL(ISP)     = ASPAR_DIAG_LOCAL(ISP) + TRIA03
+          !END IF
           B_JAC_LOCAL(ISP) = B_JAC_LOCAL(ISP) + TRIA03 * VAOLD(ISP,IP) * IOBDP(IP_glob) * IOBPD(ITH,IP_glob)
         END DO
       END DO
@@ -4387,7 +4371,6 @@
       INTEGER :: ISP, IP_glob, IPP1, IPP2
       INTEGER :: counter
 !/REF1      INTEGER :: eIOBPDR
-      INTEGER :: POS_TRICK(3,2)
       REAL  :: DTK(3), TMP3(NSPEC,3)
       REAL  :: LAMBDA(2)
       REAL  :: CRFS(3), K(3)
@@ -4404,13 +4387,6 @@
       REAL  :: FL11_Y, FL12_Y, FL21_Y, FL22_Y, FL31_Y, FL32_Y
       REAL  :: FL11_U, FL12_U, FL21_U, FL22_U, FL31_U, FL32_U
 
-      POS_TRICK(1,1) = 2
-      POS_TRICK(1,2) = 3
-      POS_TRICK(2,1) = 3
-      POS_TRICK(2,2) = 1
-      POS_TRICK(3,1) = 1
-      POS_TRICK(3,2) = 2
- 
       TRIA03    = ONETHIRD * PDLIB_TRIA(IE)
       IEN_LOCAL = PDLIB_IEN(:,IE)
       NI        = INE(:,IE)
@@ -4746,7 +4722,6 @@
 
       !WRITE(*,*) NX, NY, NSEA, NSEAL, NSEALM, NP, NPA, NTRI, NE
 
-
       DO JSEA = 1, NP
 
         IP      = JSEA
@@ -4783,15 +4758,13 @@
               DAM2(ITH+IS0) = DAM2(1+IS0)
             END DO
           END DO
+
           eSI    = PDLIB_SI(IP)
           SIDT   = eSI * DTG
           DEPTH  = DW(ISEA) 
-!/DB1          VSDB = 0.; VDDB = 0.
-!/DB1          CALL W3SDB1 ( JSEA, SPEC_VA, DEPTH, EMEAN, FMEAN, WNMEAN, CG1, LBREAK, VSDB, VDDB )
-!/TR1          VSTR = 0.; VDTR = 0.
-!/TR1          CALL W3STR1 ( SPEC_VA, CG1, WN1, DEPTH, JSEA, VSTR, VDTR )
-!/VEG1         VSVG = 0.; VDVG = 0. 
-!/VEG1         CALL W3SVEG1 ( JSEA, 1, SPEC_VA, DEPTH, EMEAN, FMEAN, WNMEAN, VSVG, VDVG )
+!/DB1     CALL W3SDB1 ( JSEA, SPEC_VA, DEPTH, EMEAN, FMEAN, WNMEAN, CG1, LBREAK, VSDB, VDDB )
+!/TR1     CALL W3STR1 ( SPEC_VA, CG1, WN1, DEPTH, JSEA, VSTR, VDTR )
+!/VEG1    CALL W3SVEG1 ( JSEA, 1, SPEC_VA, DEPTH, EMEAN, FMEAN, WNMEAN, VSVG, VDVG ) 
           DO IK=1,NK
             DO ITH=1,NTH
               ISP=ITH + (IK-1)*NTH
@@ -4818,7 +4791,6 @@
 !/TR1            eVD = evD + MIN(0.,DBLE(VDTR(ISP)))
 !/VEG1           eVS = eVS + DBLE(VSVG(ISP)) / CG(IK,ISEA) * CLATS(ISEA)
 !/VEG1           eVD = evD + MIN(0.,DBLE(VDVG(ISP)))
-              !WRITE(12434,'(I10,3F20.10)') JSEA, VSTOT(ISP,JSEA), VDTOT(ISP,JSEA)
               B_JAC(ISP,IP) = B_JAC(ISP,IP) + SIDT * (eVS - eVD*VA(ISP,JSEA))
               IF (IMEM == 1) THEN
                 ASPAR_JAC(ISP,PDLIB_I_DIAG(IP)) = ASPAR_JAC(ISP,PDLIB_I_DIAG(IP)) - SIDT * eVD
@@ -4931,6 +4903,7 @@
 !/DB1         SPEC_VA(ISP) = VA(ISP,JSEA) * CG(IK,ISEA) / CLATS(ISEA)
 !/DB1       ENDDO
 !/DB1     ENDDO
+!/DB1     SPEC_VA = VA(:,JSEA)
 !/DB1     CALL COMPUTE_MEAN_PARAM(SPEC_VA, CG1, WN1, EMEAN, FMEAN, WNMEAN, AMAX)
 !/DB1     CALL W3SDB1 ( JSEA, SPEC_VA, DEPTH, EMEAN, FMEAN, WNMEAN, CG1, LBREAK, VSDB, VDDB )
           DO IK=1,NK
@@ -5824,7 +5797,7 @@
             ENDIF ! IMEM
 !/DEBUGSOLVERCOH          OffDiag(:, IP)=REAL(eOff)
 !/DEBUGSOLVERCOH          WRITE(740+IAPROC,*) 'Step 2: sum(eSum)=', sum(eSum), ' eOff=', sum(eOff)
-            IF (FSREFRACTION) THEN
+            IF (FSREFRACTION .and. .not. IMEM == 3) THEN
 !/DEBUGREFRACTION         WRITE(740+IAPROC,*) 'Adding refraction terms to eSum'
               CAD=CAD_THE(:,IP)
               DO ISP=1,NSPEC
@@ -5837,7 +5810,7 @@
               END DO
             END IF
 !/DEBUGSRC            WRITE(740+IAPROC,*) 'Step 3: sum(eSum)=', sum(eSum)
-            IF (FSFREQSHIFT) THEN
+            IF (FSFREQSHIFT .and. .not. IMEM == 3) THEN
               IF (FreqShiftMethod .eq. 1) THEN
                 CAS=CAS_SIG(:,IP)
                 CP_SIG = MAX(ZERO,CAS)
@@ -6016,7 +5989,7 @@
         !
         IF (B_JGS_TERMINATE_DIFFERENCE) THEN
           CALL MPI_ALLREDUCE(is_converged, itmp, 1, MPI_INT, MPI_SUM, MPI_COMM_WCMP, ierr)
-          is_converged=itmp
+          is_converged = itmp
           prop_conv = (DBLE(NX) - DBLE(is_converged))/DBLE(NX) * 100.
           !write(*,*) prop_conv, nbIter, is_converged
           if (myrank == 0) WRITE(*,*) 'solver', nbiter, is_converged, prop_conv, B_JGS_PMIN
@@ -6569,6 +6542,13 @@
 !/
       INTEGER ISP, ITH, IK, ISPprevFreq, ISPnextFreq
       INTEGER NewISP, JTH, istat
+
+      POS_TRICK(1,1) = 2
+      POS_TRICK(1,2) = 3
+      POS_TRICK(2,1) = 3
+      POS_TRICK(2,2) = 1
+      POS_TRICK(3,1) = 1
+      POS_TRICK(3,2) = 2
 
 !/DEBUGINIT    WRITE(740+IAPROC,*) 'BLOCK_SOLVER_INIT, step 1'
 !/DEBUGINIT    FLUSH(740+IAPROC)

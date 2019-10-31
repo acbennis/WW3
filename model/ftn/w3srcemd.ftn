@@ -492,7 +492,6 @@
                                  VSDS(NSPEC), VDDS(NSPEC),            &
 !/ST6                                 VSWL(NSPEC), VDWL(NSPEC),            &
                                  VSBT(NSPEC), VDBT(NSPEC),            &
-                                 VSVG(NSPEC), VDVG(NSPEC),            &
 !/IC1                                 VSIC(NSPEC), VDIC(NSPEC),            &
 !/IC2                                 VSIC(NSPEC), VDIC(NSPEC),            &
 !/IC3                                 VSIC(NSPEC), VDIC(NSPEC),            &
@@ -504,6 +503,7 @@
 !/TRX                                 VSTR(NSPEC), VDTR(NSPEC),            &
 !/BS1                                 VSBS(NSPEC), VDBS(NSPEC),            &
 !/BSX                                 VSBS(NSPEC), VDBS(NSPEC),            &
+!/VEG1                                VSVG(NSPEC), VDVG(NSPEC),            &
 !/REF1                                VREF(NSPEC),                         &
 !/IS1                                 VSIR(NSPEC), VDIR(NSPEC),            &
 !/IS2                                 VSIR(NSPEC), VDIR(NSPEC),VDIR2(NSPEC), &
@@ -564,8 +564,8 @@
 !/ST0      VDDS = 0.
       VSBT = 0.
       VDBT = 0.
-      VSVG = 0.
-      VDVG = 0.
+!/VEG1      VSVG = 0.
+!/VEG1      VDVG = 0.
 !/DB1      VSDB = 0.
 !/DB1      VDDB = 0.
 !/IC1      VSIC = 0.
@@ -656,6 +656,7 @@
 ! 1.c Set mean parameters
 !
 !/ST0      CALL W3SPR0 (SPEC, CG1, WN1, EMEAN, FMEAN, WNMEAN, AMAX)
+
 !/ST0      FP     = 0.85 * FMEAN
 !/ST1      CALL W3SPR1 (SPEC, CG1, WN1, EMEAN, FMEAN, WNMEAN, AMAX)
 !/ST1      FP     = 0.85 * FMEAN
@@ -815,9 +816,6 @@
 !/TR1          CALL W3STR1 ( SPEC, CG1, WN1, DEPTH, IX,        VSTR, VDTR )
 !/TRX          CALL W3STRX
 !/PDLIB      ENDIF
-!/PDLIB    ELSE
-!/PDLIB      VSTR = 0.
-!/PDLIB      VDTR = 0.
 !/PDLIB    ENDIF
 !
 ! 2.c Dissipation... except for ST4
@@ -844,16 +842,13 @@
 !/DB1                                                   LBREAK, VSDB, VDDB )
 !/DBX          CALL W3SDBX
 !/PDLIB      ENDIF
-!/PDLIB    ELSE
-!/PDLIB      VSDB = 0.
-!/PDLIB      VDDB = 0.
 !/PDLIB    ENDIF
 !
 ! 2.c2   optional dissipation parameterisations
 !
-!/ST6        IF (SWL6S6) THEN
-!/ST6           CALL W3SWL6 ( SPEC, CG1, WN1, VSWL, VDWL )
-!/ST6        END IF
+!/ST6      IF (SWL6S6) THEN
+!/ST6         CALL W3SWL6 ( SPEC, CG1, WN1, VSWL, VDWL )
+!/ST6      END IF
 !
 !  Vegetation 
 !/PDLIB    IF (.NOT. FSSOURCE) THEN
@@ -861,9 +856,6 @@
 !/VEG1         CALL W3SVEG1 ( IX, IY, SPEC, DEPTH, EMEAN, FMEAN, WNMEAN, VSVG, VDVG ) 
 !/VEGX         CALL W3SVEGX
 !/PDLIB      ENDIF
-!/PDLIB    ELSE
-!/PDLIB      VSVG = 0.
-!/PDLIB      VDVG = 0.
 !/PDLIB    ENDIF
 !
 ! 2.d Bottom interactions.
@@ -1133,8 +1125,16 @@
           END IF
 !/DB1     DO IS=IS1, NSPECH
 !/DB1       eInc1 = VSDB(IS) * DT / MAX ( 1. , (1.-HDT*VDDB(IS)))
-!/DB1       SPEC(IS) = MAX ( 0. , SPEC(IS)+eInc1 )
+!/DB1       SPEC(IS) = MAX ( 0. , SPEC(IS) + eInc1 )
 !/DB1     END DO
+!/TR1     DO IS=IS1, NSPECH
+!/TR1       eInc1 = VSTR(IS) * DT / MAX ( 1. , (1.-HDT*VDTR(IS)))
+!/TR1       SPEC(IS) = MAX ( 0. , SPEC(IS) + eInc1 )
+!/TR1     END DO
+!/VEG1     DO IS=IS1, NSPECH
+!/VEG1       eInc1 = VSVG(IS) * DT / MAX ( 1. , (1.-HDT*VDVG(IS)))
+!/VEG1       SPEC(IS) = MAX ( 0. , SPEC(IS) + eInc1 )
+!/VEG1     END DO
 !          IF (IX == DEBUG_NODE) THEN
 !            WRITE(*,'(A20,I20,F20.10,L20,4F20.10)') 'AFTER', IX, DEPTH, SHAVE, SUM(VS), SUM(VD), SUM(SPEC)
 !          ENDIF
