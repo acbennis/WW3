@@ -4169,18 +4169,16 @@
       REAL*8  :: FL11_Y, FL12_Y, FL21_Y, FL22_Y, FL31_Y, FL32_Y
       REAL*8  :: FL11_U, FL12_U, FL21_U, FL22_U, FL31_U, FL32_U
 
+      IP_glob              = iplg(IP)
       ASPAR_DIAG_LOCAL     = ZERO
       B_JAC_LOCAL          = ZERO
       ASPAR_OFF_DIAG_LOCAL = ZERO
- 
-      IP_glob = iplg(IP)
 
       DO ITH = 1, NTH
         CCOSA(ITH) = FACX * ECOS(ITH)
         CSINA(ITH) = FACX * ESIN(ITH)
         IOBPTH(ITH) = IOBDP(IP_glob) * (1-IOBPA(IP_glob)) * IOBPD(ITH,IP_glob)
       ENDDO
-
 
       DO I = 1, PDLIB_CCON(IP)
 
@@ -4281,7 +4279,7 @@
           !ELSE
           !  ASPAR_DIAG_LOCAL(ISP)     = ASPAR_DIAG_LOCAL(ISP) + TRIA03
           !END IF
-          B_JAC_LOCAL(ISP) = B_JAC_LOCAL(ISP) + TRIA03 * VAOLD(ISP,IP) * IOBDP(IP_glob) * IOBPD(ITH,IP_glob)
+          B_JAC_LOCAL(ISP) = B_JAC_LOCAL(ISP) + TRIA03 * VAOLD(ISP,IP) * IOBPTH(ITH)!IOBDP(IP_glob) * IOBPD(ITH,IP_glob)
         END DO
       END DO
       END SUBROUTINE
@@ -5660,7 +5658,7 @@
 !
       IF (IMEM == 1) THEN
         ASPAR_JAC = ZERO
-      ELSE IF (IMEM == 2) THEN
+      ELSE IF (IMEM == 2 .or. IMEM == 3) THEN
         ASPAR_DIAG_ALL = ZERO
       ENDIF
       B_JAC = ZERO
@@ -5684,7 +5682,6 @@
 !/MEMCHECK      write(740+IAPROC,*) 'memcheck_____:', 'WW3_PROP SECTION 4'
 !/MEMCHECK      call getMallocInfo(mallinfos)
 !/MEMCHECK      call printMallInfo(IAPROC,mallInfos)
-
 !
 !     geographical advection  
 !
@@ -5701,9 +5698,11 @@
 !
 !     spectral advection  
 !
-      IF (FSFREQSHIFT .or. FSREFRACTION) THEN
-        call calcARRAY_JACOBI_SPECTRAL(DTG,ASPAR_DIAG_ALL)
-      END IF
+      IF (IMEM == 1 .OR. IMEM == 2) THEN
+        IF (FSFREQSHIFT .or. FSREFRACTION) THEN
+          call calcARRAY_JACOBI_SPECTRAL(DTG,ASPAR_DIAG_ALL)
+        END IF
+      END IF 
 
 !/DEBUGSOLVER     !WRITE(740+IAPROC,'(A20,20E20.10)') 'SUM BJAC 2', sum(B_JAC), SUM(ASPAR_JAC)
 !
@@ -5741,6 +5740,7 @@
 
         DO IP=1,np
           IP_glob=iplg(IP)
+          IF (IOBDP((IP_glob) .eq. 0) CYCLE
           JSEA=JX_TO_JSEA(IP)
           ISEA=MAPFS(1,IP_glob)
           eSI=PDLIB_SI(IP)
