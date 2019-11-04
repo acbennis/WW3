@@ -525,7 +525,7 @@
       REAL                    :: eInc1, eInc2
       REAL                    :: DeltaSRC(NSPEC)
       REAL, PARAMETER         :: DTMINTOT = 0.01
-      LOGICAL                 :: LNEWLIMITER = .TRUE. 
+      LOGICAL                 :: LNEWLIMITER = .FALSE. 
 !/PDLIB  REAL                 :: PreVS, eVS, eVD, FAK, DVS, SIDT
 !/PDLIB  INTEGER              :: ISP, IP, ISEA
 

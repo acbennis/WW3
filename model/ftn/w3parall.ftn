@@ -59,13 +59,13 @@
       REAL, ALLOCATABLE    :: AC_tot(:,:)
       INTEGER, ALLOCATABLE :: ListISPnextDir(:), ListISPprevDir(:)
       INTEGER, ALLOCATABLE :: ListISPnextFreq(:), ListISPprevFreq(:)
-      INTEGER, PARAMETER   :: IMEM = 2
+      INTEGER, PARAMETER   :: IMEM = 1 
 
       REAL,  PARAMETER     :: ONESIXTH  = 1.0d0/6.0d0
       REAL,  PARAMETER     :: ONETHIRD  = 1.0d0/3.0d0
       REAL,  PARAMETER     :: ZERO      = 0.0d0
 
-      REAL,  PARAMETER     :: THR8      = TINY(1.0)
+      REAL,  PARAMETER     :: THR8      = TINY(1.d0)
       REAL,  PARAMETER     :: THR       = TINY(1.0)
 !!/S      CALL STRACE (IENT, 'W3XXXX')
       CONTAINS
