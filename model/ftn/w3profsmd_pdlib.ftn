@@ -3876,14 +3876,14 @@
         DO IP = 1, npa
           IP_glob=iplg(IP)
           DO I = 1, PDLIB_CCON(IP)
-          J     =  J + 1
-          IE    =  PDLIB_IE_CELL2(I,IP)
-          POS   =  PDLIB_POS_CELL2(I,IP)
-          I1    =  PDLIB_POSI(1,J)
-          I2    =  PDLIB_POSI(2,J)
-          I3    =  PDLIB_POSI(3,J)
+            J     =  J + 1
+            IE    =  PDLIB_IE_CELL2(I,IP)
+            POS   =  PDLIB_POS_CELL2(I,IP)
+            I1    =  PDLIB_POSI(1,J)
+            I2    =  PDLIB_POSI(2,J)
+            I3    =  PDLIB_POSI(3,J)
 !/DEBUGSRC      WRITE(740+IAPROC,*) 'I1=', I1, ' PDLIB_I_DIAG=', PDLIB_I_DIAG(IP)
-          K1    =  KP(POS,IE)
+            K1    =  KP(POS,IE)
 !/REF1            eIOBPDR=(1-IOBP(IP_glob))*(1-IOBPD(ITH,IP_glob))
 !/REF1            IF (eIOBPDR .eq. 1) THEN
 !/REF1              K1=ZERO
@@ -3892,13 +3892,9 @@
             DTK           =  K1 * DTG * IOBDP(IP_glob) * (1-IOBPA(IP_glob)) * IOBPD(ITH,IP_glob)
             B_JAC(ISP,IP) =  B_JAC(ISP,IP) + TRIA03 * VA(ISP,IP) * IOBDP(IP_glob) * IOBPD(ITH,IP_glob)
             TMP3          =  DTK * NM(IE)
-            IF (FSGEOADVECT) THEN
-              ASPAR_JAC(ISP,I1) = ASPAR_JAC(ISP,I1) + TRIA03 + DTK - TMP3*DELTAL(POS,IE)
-              ASPAR_JAC(ISP,I2) = ASPAR_JAC(ISP,I2)                - TMP3*DELTAL(POS_TRICK(POS,1),IE)
-              ASPAR_JAC(ISP,I3) = ASPAR_JAC(ISP,I3)                - TMP3*DELTAL(POS_TRICK(POS,2),IE)
-            ELSE
-              ASPAR_JAC(ISP,I1) = ASPAR_JAC(ISP,I1) + TRIA03
-            END IF
+            ASPAR_JAC(ISP,I1) = ASPAR_JAC(ISP,I1) + TRIA03 + DTK - TMP3*DELTAL(POS,IE)
+            ASPAR_JAC(ISP,I2) = ASPAR_JAC(ISP,I2)                - TMP3*DELTAL(POS_TRICK(POS,1),IE)
+            ASPAR_JAC(ISP,I3) = ASPAR_JAC(ISP,I3)                - TMP3*DELTAL(POS_TRICK(POS,2),IE)
           END DO
         END DO
       END DO ! ISP
@@ -4676,7 +4672,7 @@
       ENDDO
       END SUBROUTINE      
 !/ ------------------------------------------------------------------- /
-      SUBROUTINE calcARRAY_JACOBI_SPECTRAL(DTG,ASPAR_DIAG_LOCAL)
+      SUBROUTINE calcARRAY_JACOBI_SPECTRAL_1(DTG)
 !/
 !/                  +-----------------------------------+
 !/                  | WAVEWATCH III           NOAA/NCEP |
@@ -4733,7 +4729,6 @@
       USE W3ADATMD, ONLY: CG, DW
       IMPLICIT NONE
       REAL, INTENT(in) :: DTG
-      REAL, INTENT(inout) :: ASPAR_DIAG_LOCAL(nspec,NSEAL)
       INTEGER IP, IP_glob, ITH, IK
       INTEGER ISEA, ISP
       REAL ::  eSI
@@ -4753,13 +4748,9 @@
       LSIG = FLCUR .OR. FLLEV
 
       DO IP = 1, np
-
         IP_glob=iplg(IP)
         ISEA=MAPFS(1,IP_glob)
         eSI=PDLIB_SI(IP)
-        !
-        ! The frequency shifting
-        !
         IF (FSFREQSHIFT .AND. LSIG) THEN
           IF (FreqShiftMethod .eq. 1) THEN
             IF (MAPSTA(1,IP_glob) .eq. 1.and.IOBP(IP_glob).eq.1.and.IOBDP(IP_glob).eq.1.and.IOBPA(IP_glob).eq.0) THEN
@@ -4775,17 +4766,12 @@
                 ISP  = ITH + (NK-1)*NTH
                 B_SIG(ISP)= B_SIG(ISP) + CM_SIG(ISP)/DMM(NK) * FACHFA
               END DO
-              IF (IMEM == 1) THEN
-                ASPAR_JAC(:,PDLIB_I_DIAG(IP))=ASPAR_JAC(:,PDLIB_I_DIAG(IP)) + B_SIG(:)*eSI
-              ELSE IF (IMEM == 2) THEN
-                ASPAR_DIAG_LOCAL(:,IP) = ASPAR_DIAG_LOCAL(:,IP) + B_SIG * eSI
-              ENDIF
+              ASPAR_JAC(:,PDLIB_I_DIAG(IP))=ASPAR_JAC(:,PDLIB_I_DIAG(IP)) + B_SIG(:)*eSI
             ELSE
               CAS=0
             END IF
             CAS_SIG(:,IP)=CAS
-          END IF
-          IF (FreqShiftMethod .eq. 2) THEN
+          ELSE IF (FreqShiftMethod .eq. 2) THEN
             IF (MAPSTA(1,IP_glob) .eq. 1.and.IOBP(IP_glob).eq.1) THEN
               CALL PROP_FREQ_SHIFT_M2(IP, ISEA, CWNB_M2, DWNI_M2, DTG)
 !/DEBUGFREQSHIFT         WRITE(740+IAPROC,*) 'sum(CWNB_M2)=', sum(CWNB_M2)
@@ -4793,19 +4779,11 @@
                 DO IK=1,NK
                   ISP = ITH + (IK-1)*NTH
                   eVal = DWNI_M2(IK) * ( MIN(CWNB_M2(ISP - NTH), ZERO) - MAX(CWNB_M2(ISP),ZERO) )
-                  IF (IMEM == 1) THEN
-                    ASPAR_JAC(ISP,PDLIB_I_DIAG(IP)) =  ASPAR_JAC(ISP,PDLIB_I_DIAG(IP)) - eSI * eVal
-                  ELSE IF (IMEM == 2) THEN
-                    ASPAR_DIAG_LOCAL(ISP,IP) =  ASPAR_DIAG_LOCAL(ISP,IP) - eSI * eVal
-                  ENDIF
+                  ASPAR_JAC(ISP,PDLIB_I_DIAG(IP)) =  ASPAR_JAC(ISP,PDLIB_I_DIAG(IP)) - eSI * eVal
                 END DO
                 eVal = DWNI_M2(NK) * MIN(CWNB_M2(ITH + (NK-1)*NTH), ZERO) * FACHFA
                 ITH0 = NSPEC - NTH
-                IF (IMEM == 1) THEN
-                  ASPAR_JAC(ITH0 + ITH,PDLIB_I_DIAG(IP)) = ASPAR_JAC(ITH0 + ITH,PDLIB_I_DIAG(IP)) + eSI * eVal
-                ELSE IF (IMEM == 2) THEN
-                  ASPAR_DIAG_LOCAL(ITH0 + ITH,IP) = ASPAR_DIAG_LOCAL(ITH0 + ITH,IP) + eSI * eVal
-                ENDIF 
+                ASPAR_JAC(ITH0 + ITH,PDLIB_I_DIAG(IP)) = ASPAR_JAC(ITH0 + ITH,PDLIB_I_DIAG(IP)) + eSI * eVal
               END DO
             ELSE
               CWNB_M2=0
@@ -4835,12 +4813,167 @@
           CP_THE = DTG*MAX(ZERO,CAD)
           CM_THE = DTG*MIN(ZERO,CAD)
           B_THE(:) = CP_THE(:) - CM_THE(:)
-          IF (IMEM == 1) THEN
-            ASPAR_JAC(:,PDLIB_I_DIAG(IP))=ASPAR_JAC(:,PDLIB_I_DIAG(IP)) + B_THE(:)*eSI
-          ELSEIF (IMEM ==2) THEN
-            ASPAR_DIAG_LOCAL(:,IP) = ASPAR_DIAG_LOCAL(:,IP) + B_THE(:)*eSI
-          ENDIF
+          ASPAR_JAC(:,PDLIB_I_DIAG(IP))=ASPAR_JAC(:,PDLIB_I_DIAG(IP)) + B_THE(:)*eSI
         END IF
+      END DO
+!!/DEBUGSOLVER     CALL PrintTotalOffContrib("Offdiag after the refraction")
+      END SUBROUTINE
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE calcARRAY_JACOBI_SPECTRAL_2(DTG,ASPAR_DIAG_LOCAL)
+!/
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |                                   |  
+!/                  | Aron Roland (BGS IT&E GmbH)       |
+!/                  | Mathieu Dutour-Sikiric (IRB)      |
+!/                  |                                   |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :        01-June-2018 |
+!/                  +-----------------------------------+
+!/
+!/    01-June-2018 : Origination.                        ( version 6.04 )
+!/
+!  1. Purpose : Compute matrix coefficients for spectral part
+!  2. Method :
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
+!
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!  7. Remarks
+!  8. Structure :
+!  9. Switches :
+!
+!     !/S  Enable subroutine tracing.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
+
+!
+!/ ------------------------------------------------------------------- /
+!/S      USE W3SERVMD, ONLY: STRACE
+!
+      USE W3GDATMD, ONLY: FSREFRACTION, FSFREQSHIFT
+      USE W3ODATMD, ONLY : IAPROC
+      USE YOWNODEPOOL, ONLY: np, iplg, PDLIB_SI, PDLIB_I_DIAG
+      USE W3GDATMD, ONLY: IOBP, MAPSTA, IOBPD, FACHFA, IOBPA, IOBDP
+      USE W3IDATMD, ONLY: FLLEV, FLCUR
+      USE W3GDATMD, ONLY: NK, NK2, NTH, NSPEC, MAPFS, DMIN, DSIP, NSEAL
+      USE W3PARALL, ONLY : PROP_REFRACTION_PR3, PROP_REFRACTION_PR1, PROP_FREQ_SHIFT, PROP_FREQ_SHIFT_M2, ZERO, IMEM
+      USE W3ADATMD, ONLY: CG, DW
+      IMPLICIT NONE
+      REAL, INTENT(in) :: DTG
+      REAL, INTENT(inout) :: ASPAR_DIAG_LOCAL(nspec,NSEAL)
+      INTEGER IP, IP_glob, ITH, IK
+      INTEGER ISEA, ISP
+      REAL ::  eSI
+      REAL  :: B_SIG(NSPEC), B_THE(NSPEC)
+      REAL  :: CP_SIG(NSPEC), CM_SIG(NSPEC)
+      REAL  :: CP_THE(NSPEC), CM_THE(NSPEC)
+      REAL  :: CAD(NSPEC), CAS(NSPEC)
+      REAL  :: DMM(0:NK2), eVal
+      REAL  :: DWNI_M2(NK), CWNB_M2(1-NTH:NSPEC)
+      LOGICAL :: DoLimiterRefraction = .FALSE.
+      LOGICAL :: DoLimiterFreqShit   = .FALSE. !AR: This one is missing ...
+      INTEGER :: ITH0
+
+      LOGICAL :: LSIG = .FALSE.
+
+!AR: this is missing in init ... but there is a design error in ww3_grid with FLCUR and FLLEV
+      LSIG = FLCUR .OR. FLLEV
+
+      DO IP = 1, np
+
+        IP_glob=iplg(IP)
+        ISEA=MAPFS(1,IP_glob)
+        eSI=PDLIB_SI(IP)
+        !
+        ! The frequency shifting
+        !
+        IF (FSFREQSHIFT .AND. LSIG) THEN
+          IF (FreqShiftMethod .eq. 1) THEN
+            IF (MAPSTA(1,IP_glob) .eq. 1.and.IOBP(IP_glob).eq.1.and.IOBDP(IP_glob).eq.1.and.IOBPA(IP_glob).eq.0) THEN
+              CALL PROP_FREQ_SHIFT(IP, ISEA, CAS, DMM, DTG)
+              CP_SIG = MAX(ZERO,CAS)
+              CM_SIG = MIN(ZERO,CAS)
+              B_SIG=0
+              DO ITH=1,NTH
+                DO IK=1,NK
+                  ISP=ITH + (IK-1)*NTH
+                  B_SIG(ISP)= CP_SIG(ISP)/DMM(IK-1) - CM_SIG(ISP)/DMM(IK)
+                END DO
+                ISP  = ITH + (NK-1)*NTH
+                B_SIG(ISP)= B_SIG(ISP) + CM_SIG(ISP)/DMM(NK) * FACHFA
+              END DO
+              ASPAR_DIAG_LOCAL(:,IP) = ASPAR_DIAG_LOCAL(:,IP) + B_SIG * eSI
+            ELSE
+              CAS=0
+            END IF
+            CAS_SIG(:,IP)=CAS
+          END IF
+
+          IF (FreqShiftMethod .eq. 2) THEN
+            IF (MAPSTA(1,IP_glob) .eq. 1.and.IOBP(IP_glob).eq.1) THEN
+              CALL PROP_FREQ_SHIFT_M2(IP, ISEA, CWNB_M2, DWNI_M2, DTG)
+!/DEBUGFREQSHIFT         WRITE(740+IAPROC,*) 'sum(CWNB_M2)=', sum(CWNB_M2)
+              DO ITH=1,NTH
+                DO IK=1,NK
+                  ISP = ITH + (IK-1)*NTH
+                  eVal = DWNI_M2(IK) * ( MIN(CWNB_M2(ISP - NTH), ZERO) - MAX(CWNB_M2(ISP),ZERO) )
+                  IF (IMEM == 1) THEN
+                    ASPAR_JAC(ISP,PDLIB_I_DIAG(IP)) =  ASPAR_JAC(ISP,PDLIB_I_DIAG(IP)) - eSI * eVal
+                  ELSE IF (IMEM == 2) THEN
+                    ASPAR_DIAG_LOCAL(ISP,IP) =  ASPAR_DIAG_LOCAL(ISP,IP) - eSI * eVal
+                  ENDIF
+                END DO
+                eVal = DWNI_M2(NK) * MIN(CWNB_M2(ITH + (NK-1)*NTH), ZERO) * FACHFA
+                ITH0 = NSPEC - NTH
+                ASPAR_DIAG_LOCAL(ITH0 + ITH,IP) = ASPAR_DIAG_LOCAL(ITH0 + ITH,IP) + eSI * eVal
+              END DO
+            ELSE
+              CWNB_M2=0
+            END IF
+            CWNB_SIG_M2(:,IP)=CWNB_M2
+          END IF
+        END IF
+        !
+        IF (FSREFRACTION) THEN
+!!/DEBUGSOLVER     WRITE(740+IAPROC,*) 'refraction IP=', IP
+          !IF ((MAPSTA(1,IP_glob) .eq. 1).and.(SUM(IOBPD(:,IP_glob)) .EQ. NTH)) THEN
+          !IF (MAPSTA(1,IP_glob) .eq. 1) THEN
+          !IF (IOBP(IP_glob) .eq. 1) THEN
+          IF (MAPSTA(1,IP_glob) .eq. 1.and. IOBP(IP_glob) .eq. 1.and.IOBDP(IP_glob).eq.1.and.IOBPA(IP_glob).eq.0) THEN
+!!/PR1            CALL PROP_REFRACTION_PR1(ISEA,DTG,CAD) !AR: Is this working?
+!!/PR3            CALL PROP_REFRACTION_PR3(ISEA,DTG,CAD, DoLimiterRefraction)
+            CALL PROP_REFRACTION_PR3(IP,ISEA,DTG,CAD,DoLimiterRefraction)
+          ELSE
+            CAD=ZERO
+          END IF
+!/DEBUGREFRACTION     WRITE(740+IAPROC,*) 'refraction IP=', IP, ' ISEA=', ISEA
+!/DEBUGREFRACTION     WRITE(740+IAPROC,*) 'sum(abs(CAD))=', sum(abs(CAD))
+          CAD_THE(:,IP)=CAD
+          CP_THE = DTG*MAX(ZERO,CAD)
+          CM_THE = DTG*MIN(ZERO,CAD)
+          B_THE(:) = CP_THE(:) - CM_THE(:)
+          ASPAR_DIAG_LOCAL(:,IP) = ASPAR_DIAG_LOCAL(:,IP) + B_THE(:)*eSI
+        END IF
+
       END DO
 !!/DEBUGSOLVER     CALL PrintTotalOffContrib("Offdiag after the refraction")
       END SUBROUTINE
@@ -6062,7 +6195,11 @@
 !     spectral advection  
 !
       IF (FSFREQSHIFT .or. FSREFRACTION) THEN
-        call calcARRAY_JACOBI_SPECTRAL(DTG,ASPAR_DIAG_ALL)
+        IF (IMEM == 1) THEN
+          call calcARRAY_JACOBI_SPECTRAL_1(DTG)
+        ELSE IF (IMEM == 2) THEN
+          call calcARRAY_JACOBI_SPECTRAL_2(DTG,ASPAR_DIAG_ALL)
+        ENDIF
       END IF
 
 !/DEBUGSOLVER     !WRITE(740+IAPROC,'(A20,20E20.10)') 'SUM BJAC 2', sum(B_JAC), SUM(ASPAR_JAC)
