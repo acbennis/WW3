@@ -68,7 +68,7 @@
 !/                  |            A. Roland              | 
 !/                  |            M. Dutour Sikiric      | 
 !/                  |                        FORTRAN 90 |
-!/                  | Last update :         07-Jan-2018 |
+!/                  | Last update :         11-NOV-2019 |
 !/                  +-----------------------------------+
 !/
 !/    06-Dec-1996 : Final FORTRAN 77                    ( version 1.18 )
@@ -119,10 +119,12 @@
 !/    01-Jan-2018 : Add implicit source term integration ( version 6.04)
 !/    01-Jan-2018 : within PDLIB (A. Roland, M. Dutour    
 !/    16-Sep-2019 : Add new fractional step for wave 
-!/                  wave breaking (A. Roland            ( version 6.06 )
+!/                  wave breaking (A. Roland)           ( version 6.06 )
 !/    4-Jan-2019  : Replace hard coded 0.5 by DTMINTOT  ( version 6.06 )
 !/    18-Aug-2018 : S_{ice} IC5 (Q. Liu)                ( version 6.06 )
 !/    26-Aug-2018 : UOST (Mentaschi et al. 2015, 2018)  ( version 6.06 )
+!/    11-Nov-2019 : PDLIB memory optimization and consolodiation
+!/                                                      ( version 6.06 )
 !/
 !/    Copyright 2009-2013 National Weather Service (NWS),
 !/       National Oceanic and Atmospheric Administration.  All rights
@@ -427,6 +429,8 @@
 !/PDLIB    USE W3GDATMD, ONLY: CLATS
 !/PDLIB    USE W3WDATMD, ONLY: VA
 !/PDLIB    USE W3PARALL, ONLY: ONESIXTH, ZERO, THR, IMEM 
+!/PDLIB    USE PDLIB_W3PROFSMD, ONLY: ASPAR_JAC, ASPAR_DIAG_ALL, B_JAC
+!/PDLIB    USE YOWNODEPOOL, ONLY: PDLIB_I_DIAG
 !/
       IMPLICIT NONE
 !/
@@ -999,10 +1003,6 @@
         HDT    = OFFSET * DT
         DTTOT  = DTTOT + DT
 
-!          IF (ABS(SUM(VS)) .GT. 0. .and. JSEA == 176) WRITE(*,'(A20, I10,10F20.10)') 'W3SRCE', &
-!       &                             IX, SUM(VSTR), &
-!       &                             SUM(VDTR), SUM(VS), SUM(VD), &
-!       &                             SUM(SPEC), SUM(CG1), SUM(WN1), DEPTH
 
 
 !/DEBUGSRC        IF (IX == DEBUG_NODE) WRITE(*,'(A20,2I10,5F20.10,L20)') 'TIMINGS 2', IDT, NSTEPS, DT, DTMIN, DTDYN, HDT, DTTOT, SHAVE
@@ -1038,40 +1038,15 @@
 !/DEBUGSRC               WRITE(740+IAPROC,*) 'min/max/sum(VDBT)=', minval(VDBT), maxval(VDBT), sum(VDBT)
 !/DEBUGSRC        END IF
 
+!AR: will be removed next ...
+         IF (srce_call .eq. srce_imp_pre) THEN
+            DO IS=1,NSPEC
+              VD(IS) = MIN(0., VD(IS))
+            END DO
+            VSIO = VS
+            VDIO = VD
+          ENDIF     
 
-        IF (srce_call .eq. srce_imp_pre) THEN
-          PrintDeltaSmDA=.FALSE.
-          IF (PrintDeltaSmDA .eqv. .TRUE.) THEN
-            DO IS=1,NSPEC
-              DeltaSRC(IS) = VSIN(IS) - SPEC(IS)*VDIN(IS)
-            END DO
-            WRITE(740+IAPROC,*) 'min/max/sum(VSIN)=', minval(VSIN), maxval(VSIN), sum(VSIN)
-            WRITE(740+IAPROC,*) 'min/max/sum(DeltaIN)=', minval(DeltaSRC), maxval(DeltaSRC), sum(DeltaSRC)
-            !
-            DO IS=1,NSPEC
-              DeltaSRC(IS) = VSNL(IS) - SPEC(IS)*VDNL(IS)
-            END DO
-            WRITE(740+IAPROC,*) 'min/max/sum(VSNL)=', minval(VSNL), maxval(VSNL), sum(VSNL)
-            WRITE(740+IAPROC,*) 'min/max/sum(DeltaNL)=', minval(DeltaSRC), maxval(DeltaSRC), sum(DeltaSRC)
-            !
-            DO IS=1,NSPEC
-              DeltaSRC(IS) = VSDS(IS) - SPEC(IS)*VDDS(IS)
-            END DO
-            WRITE(740+IAPROC,*) 'min/max/sum(VSDS)=', minval(VSDS), maxval(VSDS), sum(VSDS)
-            WRITE(740+IAPROC,*) 'min/max/sum(DeltaDS)=', minval(DeltaSRC), maxval(DeltaSRC), sum(DeltaSRC)
-            !
-!            DO IS=1,NSPEC
-!              DeltaSRC(IS) = VSIC(IS) - SPEC(IS)*VDIC(IS)
-!            END DO
-            WRITE(740+IAPROC,*) 'min/max/sum(DeltaDS)=', minval(DeltaSRC), maxval(DeltaSRC), sum(DeltaSRC)
-          END IF
-     
-!          CALL SIGN_VSD_SEMI_IMPLICIT_WW3(SPEC,VS,VD)
-          DO IS=1,NSPEC
-            VD(IS) = MIN(0., VD(IS))
-          END DO
-          VSIO = VS
-          VDIO = VD
 !!/DEBUGSRC          IF (IX == DEBUG_NODE) WRITE(44,'(10EN15.4)') SUM(VS), SUM(VD), SUM(VSIN), SUM(VDIN), SUM(VSDS), SUM(VDDS), SUM(VSNL), SUM(VDNL)
 !/DEBUGSRC          IF (IX == DEBUG_NODE) THEN
 !/DEBUGSRC            WRITE(740+IAPROC,*) '     srce_imp_pre : SHAVE = ', SHAVE
@@ -1098,7 +1073,6 @@
 ! 5.  Increment spectrum --------------------------------------------- *
 !
         IF (srce_call .eq. srce_direct) THEN
-          SHAVE = .FALSE. 
 !         IF (IX == DEBUG_NODE) THEN
 !            WRITE(*,'(A20,I20,F20.10,L20,4F20.10)') 'BEFORE', IX, DEPTH, SHAVE, SUM(VS), SUM(VD), SUM(SPEC)
 !          ENDIF

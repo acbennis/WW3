@@ -4897,7 +4897,6 @@
       USE YOWELEMENTPOOL, ONLY:  NE
       USE W3ADATMD, ONLY: CG, DW, WN, U10, U10D, NSEALM
       USE W3WDATMD, ONLY: UST, USTDIR
-!/ST4      USE W3SRC4MD, ONLY: W3SPR4
       USE W3GDATMD, ONLY: NK, NTH, NSPEC, MAPFS, DMIN, DTMIN, NX, NY, NTRI, NSEA, NSEAL
       USE W3GDATMD, ONLY: IOBP, MAPSTA, FACP, SIG, IOBPD, IOBPA, IOBDP
       USE W3PARALL, ONLY: IMEM
@@ -4928,8 +4927,7 @@
 
         IP      = JSEA
         IP_glob = iplg(IP)
-        ISEA    = iplg(IP)
-        if (IP_glob .ne. ISEA) STOP 'TEST TEST IOBP NE ISEA' 
+        ISEA    = IP_glob
 
         IF ((IOBP(IP_glob).eq.3.or.IOBP(IP_glob).eq.1).and.IOBDP(IP_glob).eq.1.and.IOBPA(IP_glob).eq.0) THEN
 
@@ -4974,8 +4972,6 @@
           DO IK=1,NK
             DO ITH=1,NTH
               ISP=ITH + (IK-1)*NTH
-              evs = 0.d0
-              evd = 0.d0
               IF (.true.) THEN!SHAVETOT(JSEA)) THEN ! Limit ONLY the source term part ...
                 IF (LNEWLIMITER) THEN
                   MAXDAC    = MAX(DAM(ISP),DAM2(ISP))
