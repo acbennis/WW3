@@ -119,7 +119,8 @@
       USE W3GDATMD, ONLY: SIG
       USE W3ODATMD, only : IAPROC, NAPERR, NDSE
       USE W3IDATMD, ONLY: INFLAGS2, VEGLS, VEGBV, VEGN, VEGCD
-      USE CONSTANTS, ONLY: GRAV, PI, TPI
+!/PDLIB      use yowNodepool, only: ipgl, iplg
+      USE CONSTANTS, ONLY: GRAV, PI, TPI, LPDLIB 
 !/S      USE W3SERVMD, ONLY: STRACE
 !/T0      USE W3ARRYMD, ONLY: PRT2DS
 !/T1      USE W3ARRYMD, ONLY: OUTMAT
@@ -173,9 +174,15 @@
       D = 0.
 
       IF (INFLAGS2(-9)) THEN
-         VLTH = VEGLS(IX, IY)
-         VDM = VEGBV(IX, IY)
-         VNV = VEGN(IX, IY)
+         IF (LPDLIB) THEN
+           VLTH = VEGLS(iplg(IX),IY)
+           VDM  = VEGBV(iplg(IX),IY)
+           VNV  = VEGN(iplg(IX),IY)
+         ELSE
+           VLTH = VEGLS(IX,IY)
+           VDM  = VEGBV(IX,IY)
+           VNV  = VEGN(IX,IY)
+         ENDIF
       ELSE
          IF ( IAPROC .EQ. NAPERR )                &
          WRITE (NDSE,1001) 'VEGETATION PARAMETERS'
@@ -183,12 +190,19 @@
       END IF
       
       IF (INFLAGS2(-8)) THEN
-        VCD = VEGCD(IX, IY)
+         IF (LPDLIB) THEN
+           VCD = VEGCD(iplg(IX), IY)
+         ELSE
+           VCD = VEGCD(IX, IY)
+         ENDIF
       ELSE
         IF ( IAPROC .EQ. NAPERR )                &
         WRITE (NDSE,1001) 'VEGETATION DRAG COEFFICIENT'
         CALL EXTCDE(2)
       END IF
+
+!/PDLIB 
+!/PDLIB 
 
 !      VCD = 0.18
 !      VNV = 1200

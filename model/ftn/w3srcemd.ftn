@@ -1045,7 +1045,6 @@
             END DO
             VSIO = VS
             VDIO = VD
-          ENDIF     
 
 !!/DEBUGSRC          IF (IX == DEBUG_NODE) WRITE(44,'(10EN15.4)') SUM(VS), SUM(VD), SUM(VSIN), SUM(VDIN), SUM(VSDS), SUM(VDDS), SUM(VSNL), SUM(VDNL)
 !/DEBUGSRC          IF (IX == DEBUG_NODE) THEN
