@@ -6015,7 +6015,7 @@
       USE YOWNODEPOOL, ONLY: PDLIB_SI, PDLIB_NNZ, PDLIB_CCON
       use yowDatapool, ONLY: rtype
       use YOWNODEPOOL, ONLY: npa, iplg
-      use yowExchangeModule, ONLY : PDLIB_exchange2DREAL
+      use yowExchangeModule, ONLY : PDLIB_exchange2Dreal_zero, PDLIB_exchange2Dreal
       USE W3ADATMD, ONLY: WN
       USE MPI, ONLY : MPI_SUM, MPI_INT
       USE W3ADATMD, ONLY: MPI_COMM_WCMP
@@ -6063,7 +6063,7 @@
       REAL    :: VAinput(NSPEC), VAacloc(NSPEC), eDiffB(NSPEC),ASPAR_DIAG(NSPEC)
       REAL    :: aspar_diag_local(nspec), aspar_off_diag_local(nspec), b_jac_local(nspec)
       REAL    :: eDiffSing, eSumPart
-      REAL    :: eVal1, eVal2, extmp(nspec,nseal)
+      REAL    :: eVal1, eVal2
       REAL    :: eVA
       LOGICAL :: LCONVERGED(NSEAL)
 !/DEBUGSRC      REAL :: IntDiff, eVA_w3srce, eVAsolve, SumACout
@@ -6454,9 +6454,7 @@
 !/DEBUGSOLVERCOH      CALL CHECK_ARRAY_INTEGRAL_NX_R8(PRE_VA, "PRE_VA(np) just check", np)
 !/DEBUGSOLVERCOH      CALL CHECK_ARRAY_INTEGRAL_NX_R8(VA, "VA(np) before exchanges", np)
         IF (B_JGS_BLOCK_GAUSS_SEIDEL) THEN
-          extmp = VA(:,1:NPA)
-          CALL PDLIB_exchange2DREAL(extmp)
-          VA(:,1:NPA) = extmp
+          CALL PDLIB_exchange2DREAL_zero(VA)
         ELSE
           CALL PDLIB_exchange2DREAL(U_JAC)
           VA(:,1:NPA) = U_JAC
@@ -6707,7 +6705,7 @@
       USE YOWNODEPOOL, ONLY: PDLIB_SI, PDLIB_IEN, PDLIB_CCON, NPA, PDLIB_IE_CELL2, PDLIB_POS_CELL2
       use yowDatapool, ONLY: rtype
       use YOWNODEPOOL, ONLY: npa, iplg
-      use yowExchangeModule, ONLY : PDLIB_exchange2DREAL
+      use yowExchangeModule, ONLY : PDLIB_exchange2Dreal_zero 
       USE W3ADATMD, ONLY: WN
       USE MPI, ONLY : MPI_SUM, MPI_INT
       USE W3ADATMD, ONLY: MPI_COMM_WCMP, CFLXYMAX
@@ -6896,7 +6894,7 @@
           END DO
           VA(:,IP) = MAX(ZERO,VA(:,IP)-DT4AI/PDLIB_SI(IP)*ST3)
         END DO !IP
-        CALL PDLIB_exchange2DREAL(VA(:,1:NPA))
+        CALL PDLIB_exchange2DREAL_ZERO(VA)
       END DO !IT
 
       DO IP = 1, npa

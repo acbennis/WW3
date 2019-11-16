@@ -43,7 +43,7 @@ module yowExchangeModule
   private
   public :: initNbrDomains, createMPITypes, setDimSize
   public :: finalizeExchangeModule, PDLIB_exchange1Dreal
-  public :: PDLIB_exchange2Dreal
+  public :: PDLIB_exchange2Dreal, PDLIB_exchange2Dreal_zero
 
   !> Holds some data belong to a neighbor Domain
   type, public :: t_neighborDomain
