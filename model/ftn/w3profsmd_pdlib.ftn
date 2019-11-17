@@ -361,7 +361,10 @@
         IP=JSEA
         IP_glob=iplg(IP)
         ISEA=MAPFS(1,IP_glob)
-        IF (ISEA .ne. IP_glob) CALL PDLIB_ABORT(5)
+        IF (ISEA .ne. IP_glob) THEN
+          WRITE(*,*) 'ISEA .ne. IP_glob'
+          CALL PDLIB_ABORT(20)
+        ENDIF
       ENDDO
 !
 !/
@@ -6071,7 +6074,7 @@
       REAL    :: aspar_diag_local(nspec), aspar_off_diag_local(nspec), b_jac_local(nspec)
       REAL    :: eDiffSing, eSumPart
       REAL    :: eVal1, eVal2
-      REAL    :: eVA
+      REAL    :: eVA,extmp(nspec,nseal)
       LOGICAL :: LCONVERGED(NSEAL)
 !/DEBUGSRC      REAL :: IntDiff, eVA_w3srce, eVAsolve, SumACout
 !/DEBUGSRC      REAL :: SumVAin, SumVAout, SumVAw3srce, SumVS, SumVD, VS_w3srce
@@ -6461,7 +6464,10 @@
 !/DEBUGSOLVERCOH      CALL CHECK_ARRAY_INTEGRAL_NX_R8(PRE_VA, "PRE_VA(np) just check", np)
 !/DEBUGSOLVERCOH      CALL CHECK_ARRAY_INTEGRAL_NX_R8(VA, "VA(np) before exchanges", np)
         IF (B_JGS_BLOCK_GAUSS_SEIDEL) THEN
-          CALL PDLIB_exchange2DREAL_zero(VA)
+          !CALL PDLIB_exchange2DREAL_zero(VA)
+          extmp = VA(:,1:NPA)
+          CALL PDLIB_exchange2DREAL(extmp)
+          VA(:,1:NPA) = extmp
         ELSE
           CALL PDLIB_exchange2DREAL(U_JAC)
           VA(:,1:NPA) = U_JAC
