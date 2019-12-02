@@ -2594,7 +2594,7 @@ END SUBROUTINE
    
    END SUBROUTINE
 !/ ------------------------------------------------------------------- /
-   SUBROUTINE SET_UG_IOBP ( )
+   SUBROUTINE SETUGIOBP ( )
 !/
 !/                  +-----------------------------------+
 !/                  | WAVEWATCH III           NOAA/NCEP |
@@ -2839,6 +2839,6 @@ END SUBROUTINE
 !/DEBUGSETUGIOBP      FLUSH(740+IAPROC)
 !
       RETURN    
-      END SUBROUTINE SET_UG_IOBP
+      END SUBROUTINE SETUGIOBP
 !/ ------------------------------------------------------------------- /
 END MODULE W3TRIAMD
