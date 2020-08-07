@@ -103,7 +103,7 @@
 
       USE W3GDATMD, ONLY: NK, NTH, XFR, FR1, DTH, TH, FACHFE,           &
                           GNAME, W3NMOD, W3SETG,&
-                          NSEA, MAPSTA, XYB, GTYPE, XGRD, YGRD, X0, Y0, &
+                          NSEA, MAPSTA, GTYPE, XGRD, YGRD, X0, Y0, &
                           SX, SY, MAPSF, UNGTYPE, CLGTYPE, RLGTYPE, FLAGLL
       USE W3ODATMD, ONLY: NDSO, NDSE
       USE W3IOBCMD, ONLY: VERBPTBC, IDSTRBC

@@ -1988,7 +1988,7 @@
 
 
 !/ ------------------------------------------------------------------- /
-      subroutine flex_tidana_webpage(IX,IY,XLON,XLAT,KD1,KD2,ndef, itrend, RES, SSQ, RMSR0, SDEV0, &
+      subroutine flex_tidana_webpage(IX,IY,KD1,KD2,ndef, itrend, RES, SSQ, RMSR0, SDEV0, &
                                       RMSR, RESMAX, IMAX, ITEST)
 !
 !***********************************************************************
@@ -2081,7 +2081,8 @@
   
       INTEGER, INTENT(IN)         :: NDEF, ITREND, ITEST
       INTEGER(KIND=4), INTENT(IN) :: KD1, KD2, IX, IY
-      REAL           , INTENT(IN) :: XLON, XLAT
+!AR: so many bugs in one line of code, 1st xlon and xlat are only sigle precission, very sad, moreover they are not even used ... bad²
+!      REAL           , INTENT(IN) :: XLON, XLAT
       REAL(KIND=8)   , INTENT(OUT):: SDEV0(NDEF), RMSR0(NDEF), RMSR(NDEF), RESMAX(NDEF)
       REAL           , INTENT(OUT):: SSQ(NDEF), RES(NDEF)
       INTEGER        , INTENT(OUT):: IMAX(NDEF)
