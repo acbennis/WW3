@@ -3947,6 +3947,7 @@
 #ifdef CGTABLE
           CG1    = CG(IK,IP_GLOB)
 #else
+          stop 'checking for cgtable' 
           CALL WAVNU_LOCAL(SIG(IK),DW(IP_GLOB),WN1,CG1)
 #endif
           CXY(1,IP) = CCOS * CG1/CLATS(IP_GLOB)
